@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel to Text Exporter</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <h1>Excel to Text Exporter</h1>
+    <input type="file" id="fileInput" accept=".xlsx, .xls">
+    <br><br>
+    <label>Select column to process:</label>
+    <br>
+    <input type="radio" id="colF" name="column" value="F" checked> Column F
+    <input type="radio" id="colL" name="column" value="L"> Column L
+    <br><br>
+    <button onclick="processFile()">Process File</button>
+    <br><br>
+    <a id="downloadLink" style="display:none">Download Text File</a>
+
+    <script>
+        function processFile() {
+            const fileInput = document.getElementById('fileInput');
+            const selectedColumn = document.querySelector('input[name="column"]:checked').value;
+
+            if (!fileInput.files.length) {
+                alert('Please upload an Excel file.');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(event) {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                let result = '';
+                const maxRows = 2000;
+
+                for (let i = 0; i < rows.length && i < maxRows; i++) {
+                    let value;
+                    if (selectedColumn === 'F') {
+                        value = rows[i][5]; // Column F (0-indexed, so 5)
+                    } else if (selectedColumn === 'L') {
+                        value = rows[i][11]; // Column L (0-indexed, so 11)
+                    }
+                    if (value !== undefined) {
+                        result += String(value).replace(/\s+/g, ''); // Remove all spaces
+                    }
+                }
+
+                const blob = new Blob([result], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const downloadLink = document.getElementById('downloadLink');
+                downloadLink.href = url;
+                downloadLink.download = 'result.txt';
+                downloadLink.style.display = 'block';
+                downloadLink.innerText = 'Download Text File';
+            };
+
+            reader.readAsArrayBuffer(file);
+        }
+    </script>
+</body>
+</html>
